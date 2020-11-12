@@ -1,4 +1,5 @@
 from dolfin import *
+from dolfin_adjoint import *
 
 # For problem
 #   -Delta u + grad(p) = f
