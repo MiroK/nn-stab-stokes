@@ -34,7 +34,7 @@ from dolfin import *
 # is in terms of unstable elements. Can NN1 learn the stabilization?
 
 
-def stokes(mesh, Velm, Qelm):
+def stokes(W, rhs=None):
     '''
            no-slip
     ---------------------------
@@ -47,44 +47,42 @@ def stokes(mesh, Velm, Qelm):
     '''
     # NOTE: nice thing about this setup is that P2-P1 get the exact solution
     # of the problem
-    W = FunctionSpace(mesh, MixedElement([Velm, Qelm]))
     bcs = [DirichletBC(W.sub(0), Constant((0, 0)), 'near(x[1]*(1-x[1]), 0)'),
            DirichletBC(W.sub(0), Expression(('x[1]*(1-x[1])', '0'), degree=2), 'near(x[0], 0)')]
     
-    u, p = TrialFunctions(W)
+    up = Function(W)
+    u, p = split(up)
     v, q = TestFunctions(W)
 
-    a = (inner(grad(u), grad(v))*dx + inner(p, div(v))*dx + 
+    F = (inner(grad(u), grad(v))*dx + inner(p, div(v))*dx + 
          inner(q, div(u))*dx)
-    x, y = SpatialCoordinate(mesh)
-    f = Constant((0, 0))
 
-    n = FacetNormal(mesh)
-    L = inner(f, v)*dx
+    if rhs:
+       F -= rhs(u, p, v, q)
     
-    wh = Function(W)
-    solve(a == L, wh, bcs)
+    solve(F == 0, up, bcs)
 
-    uh, ph = wh.split(deepcopy=True)
-
-    return uh, ph
+    return up
 
 
-mesh = UnitSquareMesh(32, 32, 'crossed')
 
-stable = [VectorElement('Lagrange', triangle, 2),
-          FiniteElement('Lagrange', triangle, 1)]
+if __name__== "__main__":
+    mesh = UnitSquareMesh(32, 32, 'crossed')
 
-u_stab, p_stab = stokes(mesh, *stable)
-File('u_stab.pvd') << u_stab
-File('p_stab.pvd') << p_stab
+    stable = [VectorElement('Lagrange', triangle, 2),
+              FiniteElement('Lagrange', triangle, 1)]
+    W = FunctionSpace(mesh, MixedElement(stable))
 
-# This one yield checker-board pattern of reasonable magnitude
-unstable = [VectorElement('Lagrange', triangle, 1),
-            FiniteElement('Lagrange', triangle, 1)]
+    u_stab, p_stab = stokes(W).split(deepcopy=True)
+    File('u_stab.pvd') << u_stab
+    File('p_stab.pvd') << p_stab
 
-u_stab, p_stab = stokes(mesh, *unstable)
-File('u_ustab.pvd') << u_stab
-File('p_ustab.pvd') << p_stab
+    # This one yield checker-board pattern of reasonable magnitude
+    unstable = [VectorElement('Lagrange', triangle, 1),
+                FiniteElement('Lagrange', triangle, 1)]
+    W = FunctionSpace(mesh, MixedElement(unstable))
 
+    u_stab, p_stab = stokes(W).split(deepcopy=True)
 
+    File('u_ustab.pvd') << u_stab
+    File('p_ustab.pvd') << p_stab
