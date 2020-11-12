@@ -1,0 +1,8 @@
+*.pyc
+*~
+*.pvd
+*.vtu
+*.xdmf
+*.h5
+
+*.png
