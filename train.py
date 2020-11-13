@@ -3,6 +3,7 @@ from fenics_adjoint import *
 import ufl
 from numpy.random import rand, seed
 from make_data import stokes
+from helpers import plot
 seed(21)
 
 
@@ -15,8 +16,8 @@ W = FunctionSpace(mesh, MixedElement(stable))
 
 up_stab = stokes(W)
 u_nn, p_nn = up_stab.split(deepcopy=True)
-File("out/u_stab.pvd") << u_nn
-File("out/p_stab.pvd") << p_nn
+plot(u_nn, "out/u_stab.png")
+plot(p_nn, "out/p_stab.png")
 
 # Now solve the Stokes with an unstable element pair, 
 # but with the NN as a source term
@@ -55,8 +56,8 @@ def rhs(u, p, v, q):
 # Now solve the Stokes-NN forward problem
 up = stokes(W, rhs)
 u_nn, p_nn = up.split(deepcopy=True)
-File("out/u_nn0.pvd") << u_nn
-File("out/p_nn0.pvd") << p_nn
+plot(u_nn, "out/u_nn0.png")
+plot(p_nn, "out/p_nn0.png")
 
 J = assemble((up - up_stab)**2*dx)
 for W in [W_1, W_2, b_1, W_3_1, W_3_2, b_2]:
@@ -72,5 +73,5 @@ minimize(Jhat, tol=1e-200, options={"disp": True, "gtol": 1e-12, "maxiter": 20})
 print("|U - d| = ", assemble(inner(C_up.tape_value() - up_stab, C_up.tape_value() - up_stab)*dx)**0.5)
 
 u_nn, p_nn = C_up.tape_value().split(deepcopy=True)
-File("out/u_nn.pvd") << u_nn
-File("out/p_nn.pvd") << p_nn
+plot(u_nn, "out/u_nn.png")
+plot(p_nn, "out/p_nn.png")
