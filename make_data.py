@@ -68,7 +68,7 @@ def stokes(W, rhs=None):
 
 
 if __name__== "__main__":
-    mesh = UnitSquareMesh(32, 32, 'crossed')
+    mesh = UnitSquareMesh(10, 10, 'crossed')
 
     stable = [VectorElement('Lagrange', triangle, 2),
               FiniteElement('Lagrange', triangle, 1)]

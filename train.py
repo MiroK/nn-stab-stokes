@@ -7,13 +7,16 @@ seed(21)
 
 
 # Generate data with a stable element pair
-mesh = UnitSquareMesh(10, 10, 'crossed')
+mesh = UnitSquareMesh(16, 16, 'crossed')
 
 stable = [VectorElement('Lagrange', triangle, 2),
           FiniteElement('Lagrange', triangle, 1)]
 W = FunctionSpace(mesh, MixedElement(stable))
 
 up_stab = stokes(W)
+u_nn, p_nn = up_stab.split(deepcopy=True)
+File("out/u_stab.pvd") << u_nn
+File("out/p_stab.pvd") << p_nn
 
 # Now solve the Stokes with an unstable element pair, 
 # but with the NN as a source term
@@ -51,18 +54,23 @@ def rhs(u, p, v, q):
 
 # Now solve the Stokes-NN forward problem
 up = stokes(W, rhs)
+u_nn, p_nn = up.split(deepcopy=True)
+File("out/u_nn0.pvd") << u_nn
+File("out/p_nn0.pvd") << p_nn
 
 J = assemble((up - up_stab)**2*dx)
+for W in [W_1, W_2, b_1, W_3_1, W_3_2, b_2]:
+    J += 1e4*assemble(W**2*dx)
 
 Jhat = ReducedFunctional(J, [Control(W_1), Control(b_1), Control(W_2), Control(b_2), Control(W_3_1), Control(W_3_2)])
 C_up = Control(up)
 
 set_log_level(LogLevel.ERROR)
 
-minimize(Jhat, tol=1e-200, options={"disp": True, "gtol": 1e-12, "maxiter": 5})
+minimize(Jhat, tol=1e-200, options={"disp": True, "gtol": 1e-12, "maxiter": 20})
 
 print("|U - d| = ", assemble(inner(C_up.tape_value() - up_stab, C_up.tape_value() - up_stab)*dx)**0.5)
 
 u_nn, p_nn = C_up.tape_value().split(deepcopy=True)
-File("u_nn.pvd") << u_nn
-File("p_nn.pvd") << p_nn
+File("out/u_nn.pvd") << u_nn
+File("out/p_nn.pvd") << p_nn
