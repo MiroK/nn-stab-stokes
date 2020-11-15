@@ -1,5 +1,8 @@
 from dolfin import *
 from dolfin_adjoint import *
+from helpers import plot
+from numpy.random import rand, seed
+seed(21)
 
 # For problem
 #   -Delta u + grad(p) = f
@@ -35,7 +38,7 @@ from dolfin_adjoint import *
 # is in terms of unstable elements. Can NN1 learn the stabilization?
 
 
-def stokes(W, rhs=None):
+def stokes(W, nn=None):
     '''
            no-slip
     ---------------------------
@@ -58,32 +61,38 @@ def stokes(W, rhs=None):
     F = (inner(grad(u), grad(v))*dx + inner(p, div(v))*dx + 
          inner(q, div(u))*dx)
 
-    if rhs:
-       F -= rhs(u, p, v, q)
+    if nn:
+        Fnn, reg = nn(u, p, v, q)
+        F += Fnn
     
     solve(F == 0, up, bcs)
+    
+    #solve(F == 0, up, bcs, solver_parameters={"nonlinear_solver": "snes", "snes_solver": {"line_search": "bt", "linear_solver": "lu", "report": False}},  # [basic,bt,cp,l2,nleqerr]
+    #              form_compiler_parameters={"optimize": True})
 
-    return up
+    if nn:
+        return up, assemble(reg)
+    else:
+        return up
 
 
 
 if __name__== "__main__":
-    mesh = UnitSquareMesh(10, 10, 'crossed')
+    mesh = UnitSquareMesh(16, 16, 'crossed')
 
     stable = [VectorElement('Lagrange', triangle, 2),
               FiniteElement('Lagrange', triangle, 1)]
     W = FunctionSpace(mesh, MixedElement(stable))
 
-    u_stab, p_stab = stokes(W).split(deepcopy=True)
-    File('u_stab.pvd') << u_stab
-    File('p_stab.pvd') << p_stab
+    up = stokes(W)
 
-    # This one yield checker-board pattern of reasonable magnitude
-    unstable = [VectorElement('Lagrange', triangle, 1),
-                FiniteElement('Lagrange', triangle, 1)]
-    W = FunctionSpace(mesh, MixedElement(unstable))
+    # Add noise
+    eps_noise = 1e-1
+    up.vector()[:] = 0 # eps_noise*rand(W.dim())
 
-    u_stab, p_stab = stokes(W).split(deepcopy=True)
+    u_stab, p_stab = up.split(deepcopy=True)
+    plot(u_stab, "out/u_stab.png")
+    plot(p_stab, "out/p_stab.png")
 
-    File('u_ustab.pvd') << u_stab
-    File('p_ustab.pvd') << p_stab
+    with HDF5File(MPI.comm_world, "out/up_stab.h5", "w") as xdmf:
+        xdmf.write(up, "up")
