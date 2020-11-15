@@ -87,8 +87,8 @@ if __name__== "__main__":
     up = stokes(W)
 
     # Add noise
-    eps_noise = 1e-1
-    up.vector()[:] = 0 # eps_noise*rand(W.dim())
+    eps_noise = 0
+    up.vector()[:] += eps_noise*rand(W.dim())
 
     u_stab, p_stab = up.split(deepcopy=True)
     plot(u_stab, "out/u_stab.png")

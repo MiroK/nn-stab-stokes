@@ -21,7 +21,7 @@ with HDF5File(MPI.comm_world, "out/up_stab.h5", "r") as xdmf:
 # but with the NN as a source term
 
 # This one yield checker-board pattern of reasonable magnitude
-unstable = [VectorElement('Lagrange', triangle, 2),
+unstable = [VectorElement('Lagrange', triangle, 1),
             FiniteElement('Lagrange', triangle, 1)]
 W = FunctionSpace(mesh, MixedElement(unstable))
 
@@ -62,14 +62,18 @@ plot(p_nn, "out/p_nn0.png")
 
 J = assemble((up - up_stab)**2*dx) 
 print(f"J={J}")
-#print(f"reg={reg}")
-#J += 1e4*reg
 
+
+# L2 regularisation
+#J += 1e4*reg
+#print(f"reg={1e4*reg}")
+
+# l2 regularisation
 reg = 0
 for W in [W_1, W_2, b_1, W_3_1, W_3_2, b_2]:
-    reg += 1e0*assemble(W**2*dx)
+    reg += 1e4*assemble(W**2*dx)
+J += reg
 print(f"reg={reg}")
-#J += reg
 
 Jhat = ReducedFunctional(J, [Control(W_1), Control(b_1), Control(W_2), Control(b_2), Control(W_3_1), Control(W_3_2)])
 C_up = Control(up)
