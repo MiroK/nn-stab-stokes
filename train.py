@@ -47,7 +47,23 @@ def rhs(u, p, v, q):
     relu = lambda vec: conditional(ufl.gt(vec, 0), vec, (ufl.exp(vec) - 1))
     sigma = lambda vec: sigma_(vec, func=relu)
     return inner(dot(W_3, sigma(ufl.transpose(as_vector([W_1, W_2])) * grad(p) + b_1)) + b_2, grad(q)) * dx 
+   (NN(p), q) --  (p - Pi*p, q - Pi*q)
 
+   # 
+   # h**2*       (NN(grad(p)), q)
+   # [A_h, B_h';     [-Delta, 0
+   #   B_h, NN]            0, I]
+   #
+
+   # Delta(Delta(u)) = f
+   # P2
+   # inner(div(grad(u)), div(grad(v)))*dx + (NN(u, grad(u), n), q)*dS
+   # 
+
+   #
+   # -div(mu*grad(u) + lambda*div(u)*I) + NN(u, div(u)) = 0
+
+   # -div([eps+O(h)]*grad(u)) - v*grad(u) + NN(u)
 
 # Now solve the Stokes-NN forward problem
 up = stokes(W, rhs)

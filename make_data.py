@@ -28,7 +28,7 @@ from dolfin_adjoint import *
 # Consider min(uS - ud)**2 + alpha*min(pS - pd)**2
 #
 # subject to -Delta u + grad(p) = 0
-#                  div(u) + NN1 = 0
+#                div(u) + NN(p) = 0
 #
 # 
 # Where uS, pS are STABLE data but our FEM discretization of stokes
