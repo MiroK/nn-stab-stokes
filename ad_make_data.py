@@ -21,7 +21,7 @@ def make_data(eps, mesh, elm=None):
 
 
 def advection_diffusion(V, alpha, nn=None):
-    '''XXX'''
+    '''On (0, 1) solve -eps u'' + u' = 0 with u(0) = 0, u(1) = 1'''
     bcs = [DirichletBC(V, Constant(1), 'near(x[0], 0)'),
            DirichletBC(V, Constant(0), 'near(x[0], 1)')]
         
