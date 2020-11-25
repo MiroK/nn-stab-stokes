@@ -14,7 +14,7 @@ def make_data(eps, mesh, elm=None):
     u_true = Expression('(1-std::exp((x[0]-1)/epsilon))/(1-std::exp(-1./epsilon))', degree=5,
                         epsilon=eps)
 
-    V = FunctionSpace(mesh, 'CG', 1)
+    V = FunctionSpace(mesh, elm)
     u = interpolate(u_true, V)
 
     return u, u_true
