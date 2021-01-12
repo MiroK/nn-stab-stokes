@@ -8,19 +8,28 @@ seed(21)
 #   -Delta u = f
 #
 # A consistent FEM discretization requires piecewise continuous elements. 
-# This does not hold for DG1 elements. A suitable stabilization term is added 
-# over the element interfaces.
+# This does not hold for DG1 elements. Instead, a suitable stabilization term 
+# must be added over the element interfaces, e.g. as in the discontinuous Galerkin 
+# formulation (interior penalty method).
+# Such a formulation is for instance:
+#
+# dot(grad(v), grad(u))*dx \
+#   - dot(avg(grad(v)), jump(u, n))*dS \
+#   - dot(jump(v, n), avg(grad(u)))*dS \
+#   + alpha/h_avg*dot(jump(v, n), jump(u, n))*dS 
+#
+# In the Neural Network formulation we use:
+#
+# dot(grad(v), grad(u))*dx \
+#   + dot(NN(avg(u), jump(u), n), jump(u, n) + avg(u, n))*dS 
+#
+# For more info, see doi:10.1007/978-3-642-22980-0 
 #
 # Let NN1: R x R^2 -> R
 # 
 # Consider min(uS - ud)**2 + alpha*min(pS - pd)**2
 #
-# subject to -Delta u + grad(p) = 0
-#                  div(u) + NN1 = 0
-#
-# 
-# Where uS, pS are STABLE data but our FEM discretization of stokes
-# is in terms of unstable elements. Can NN1 learn the stabilization?
+# subject to -Delta u + NN1 = 0
 
 
 def poisson(W, nn=None):
@@ -38,7 +47,7 @@ def poisson(W, nn=None):
     F = inner(grad(u), grad(v))*dx
 
     if nn:
-        Fnn, reg, _ = nn(u, p, v, q)
+        Fnn, reg = nn(u, v)
         F += Fnn
     
     solve(F == 0, u, bcs)
