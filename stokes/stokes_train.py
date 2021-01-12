@@ -2,7 +2,7 @@ from fenics import *
 from fenics_adjoint import *
 import ufl
 from numpy.random import rand, seed
-from make_data import stokes
+from stokes_make_data import stokes
 from helpers import plot
 seed(21)
 
@@ -46,26 +46,19 @@ def train_stokes(up_stab, ustab_elm):
         return inner(nn_p, grad(q))*dx, inner(nn_p, nn_p)*dx, nn_p
 
     # Now solve the Stokes-NN forward problem
-    up, reg = stokes(W, eps, nn)
+    up, reg = stokes(W, nn)
     u_nn, p_nn = up.split(deepcopy=True)
     plot(u_nn, "out/u_nn0.png")
     plot(p_nn, "out/p_nn0.png")
 
-    # N(eps, u, p) ...
-    # up_stab0.01  eps = 0.01
-    # up_stab0.001
-    #
     J = assemble((up - up_stab)**2*dx)         
     print(f"J={J}")
 
-    
     # L2 regularisation
     #J += 1e4*reg
     #print(f"reg={1e4*reg}")
 
     # l2 regularisation
-
-
     reg = 0
     for W in [W_1, W_2, b_1, W_3_1, W_3_2, b_2]:
         reg += 1e4*assemble(W**2*dx)
