@@ -31,14 +31,14 @@ seed(21)
 # Consider min(uS - ud)**2 + alpha*min(pS - pd)**2
 #
 # subject to -Delta u + grad(p) = 0
-#                div(u) + NN(p) = 0
+#                  div(u) + NN1 = 0
 #
 # 
 # Where uS, pS are STABLE data but our FEM discretization of stokes
 # is in terms of unstable elements. Can NN1 learn the stabilization?
 
 
-def stokes(W, eps, nn=None):
+def stokes(W, nn=None):
     '''
            no-slip
     ---------------------------
@@ -58,11 +58,11 @@ def stokes(W, eps, nn=None):
     u, p = split(up)
     v, q = TestFunctions(W)
 
-    F = (Constant(eps)*inner(grad(u), grad(v))*dx + inner(p, div(v))*dx + 
+    F = (inner(grad(u), grad(v))*dx + inner(p, div(v))*dx + 
          inner(q, div(u))*dx)
 
     if nn:
-        Fnn, reg = nn(Constant(eps), u, p, v, q)
+        Fnn, reg, _ = nn(u, p, v, q)
         F += Fnn
     
     solve(F == 0, up, bcs)
@@ -84,17 +84,15 @@ if __name__== "__main__":
               FiniteElement('Lagrange', triangle, 1)]
     W = FunctionSpace(mesh, MixedElement(stable))
 
-    up_eps_1 = stokes(W, eps=1)
-    up_eps_2 = stokes(W, eps=2)
+    up = stokes(W)
 
     # Add noise
-    #eps_noise = 0
-    #up.vector()[:] += eps_noise*rand(W.dim())
+    eps_noise = 0
+    up.vector()[:] += eps_noise*rand(W.dim())
 
-    #u_stab, p_stab = up.split(deepcopy=True)
-    #plot(u_stab, "out/u_stab.png")
-    #plot(p_stab, "out/p_stab.png")
+    u_stab, p_stab = up.split(deepcopy=True)
+    plot(u_stab, "out/u_stab.png")
+    plot(p_stab, "out/p_stab.png")
 
     with HDF5File(MPI.comm_world, "out/up_stab.h5", "w") as xdmf:
-        xdmf.write(up_eps_1, "up_eps_1")
-        xdmf.write(up_eps_2, "up_eps_2")
+        xdmf.write(up, "up")
