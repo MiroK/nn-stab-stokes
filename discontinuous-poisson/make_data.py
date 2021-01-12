@@ -44,9 +44,9 @@ def poisson(W, nn=None):
     solve(F == 0, u, bcs)
     
     if nn:
-        return up, assemble(reg)
+        return u, assemble(reg)
     else:
-        return up
+        return u
 
 
 
@@ -62,7 +62,7 @@ if __name__== "__main__":
     eps_noise = 0
     u.vector()[:] += eps_noise*rand(W.dim())
 
-    plot(u_stab, "out/u_stab.png")
+    plot(u, "out/u_stab.png")
 
     with HDF5File(MPI.comm_world, "out/u_stab.h5", "w") as xdmf:
         xdmf.write(u, "u")

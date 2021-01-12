@@ -2,20 +2,21 @@ from fenics import *
 from fenics_adjoint import *
 import ufl
 from numpy.random import rand, seed
-from stokes_make_data import stokes
+from make_data import poisson
 from helpers import plot
 seed(21)
 
 # Load observations
 
-def train_stokes(up_stab, ustab_elm):
-    mesh = up_stab.function_space().mesh()
+def train(u_stab, element):
+    mesh = u_stab.function_space().mesh()
 
-    W = FunctionSpace(mesh, ustab_elm)
-    # Now solve the Stokes with an unstable element pair, 
+    W = FunctionSpace(mesh, element)
+    # Now solve the Poisson with an inconsistent element, 
     # but with the NN as a source term
     
-    # Define a neural network that will be added as a source term to the Stokes eqn
+    # Define a neural network that will be added as a source term to the Poisson eqn
+    # We pass into the network the mesh size :_
     R = VectorFunctionSpace(mesh, "R", 0, dim=50)
     W_1, W_2, b_1, W_3_1, W_3_2 = Function(R), Function(R), Function(R), Function(R), Function(R)
     W_3 = as_vector([W_3_1, W_3_2])
@@ -85,30 +86,15 @@ def train_stokes(up_stab, ustab_elm):
 if __name__ == '__main__':
     import numpy as np
     
-    mesh = UnitSquareMesh(16, 16, 'crossed')
+    mesh = UnitIntervalMesh(16)
     
-    stable = [VectorElement('Lagrange', triangle, 2),
-              FiniteElement('Lagrange', triangle, 1)]
-    W = FunctionSpace(mesh, MixedElement(stable))
+    stable = FiniteElement('Lagrange', interval, 1)
+    W = FunctionSpace(mesh, stable)
 
-    up_stab = Function(W)
-    with HDF5File(MPI.comm_world, "out/up_stab.h5", "r") as xdmf:
-        xdmf.read(up_stab, "up")
+    u_stab = Function(W)
+    with HDF5File(MPI.comm_world, "out/u_stab.h5", "r") as xdmf:
+        xdmf.read(u_stab, "u")
 
-    ustab_elm = MixedElement([VectorElement('Lagrange', triangle, 1),
-                              FiniteElement('Lagrange', triangle, 1)])
-
+    ustab_elm = FiniteElement('DG', triangle, 0),
     
-    nn = train_stokes(up_stab, ustab_elm)    
-
-    # What is it?
-    W = FunctionSpace(mesh, ustab_elm)
-    Q = W.sub(1).collapse()
-
-    p = Function(Q)
-    p = interpolate(Expression('sin(pi*(x[0]*x[0]+x[1]*x[1]))', degree=1), Q)
-    q = TestFunction(Q)
-
-    stab, _, nonlinearity = nn(None, p, None, q)
-
-    
+    nn = train(up_stab, ustab_elm)    
