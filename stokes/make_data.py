@@ -62,7 +62,7 @@ def stokes(W, eps, nn=None):
          inner(q, div(u))*dx)
 
     if nn:
-        Fnn, reg = nn(Constant(eps), u, p, v, q)
+        Fnn, reg, nnp = nn(u, p, v, q)
         F += Fnn
     
     solve(F == 0, up, bcs)

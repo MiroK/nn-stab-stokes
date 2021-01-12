@@ -46,7 +46,7 @@ def train_stokes(up_stab, ustab_elm):
         return inner(nn_p, grad(q))*dx, inner(nn_p, nn_p)*dx, nn_p
 
     # Now solve the Stokes-NN forward problem
-    up, reg = stokes(W, nn)
+    up, reg = stokes(W, eps, nn)
     u_nn, p_nn = up.split(deepcopy=True)
     plot(u_nn, "out/u_nn0.png")
     plot(p_nn, "out/p_nn0.png")
